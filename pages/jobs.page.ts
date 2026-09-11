@@ -8,6 +8,7 @@ export class JobsPage {
   readonly jobCards: Locator;
   readonly sortControl: Locator;
   readonly emptyState: Locator;
+  readonly jobActionLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -25,6 +26,13 @@ export class JobsPage {
     this.emptyState = page
       .getByRole('heading', { name: /No roles match these filters/i })
       .filter({ visible: true });
+    // The details panel always offers a route forward, but the wording depends
+    // on the listing: free roles link out to the original posting, while gated
+    // Premium roles link to the community unlock instead.
+    this.jobActionLink = page
+      .getByRole('link', { name: /^(Apply|Join the community)/ })
+      .filter({ visible: true })
+      .first();
   }
 
   async goto(): Promise<void> {

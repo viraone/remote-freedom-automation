@@ -23,7 +23,7 @@ test.describe('Jobs page smoke tests', () => {
           })
           .last(),
       ).toBeVisible();
-      await expect(page.getByRole('link', { name: /^Apply/ })).toBeVisible();
+      await expect(jobsPage.jobActionLink).toBeVisible({ timeout: 15_000 });
     });
   });
 });
