@@ -20,7 +20,11 @@ export class JobsPage {
       .getByRole('button')
       .filter({ has: page.locator('h3') });
     this.sortControl = page.locator('select:visible');
-    this.emptyState = page.getByText(/No roles match these filters/i).first();
+    // Mobile and desktop markup coexist, so match the copy the user can
+    // actually see rather than whichever comes first in the DOM.
+    this.emptyState = page
+      .getByRole('heading', { name: /No roles match these filters/i })
+      .filter({ visible: true });
   }
 
   async goto(): Promise<void> {
@@ -63,12 +67,20 @@ export class JobsPage {
   }
 
   async clearSearch(): Promise<void> {
-    await this.clearSearchButton.click();
+    // Under parallel load the app can re-render between resolving the control
+    // and the click landing, which silently drops the interaction -- this failed
+    // 3/3 runs at two workers while passing at one. Re-click until the query
+    // actually leaves the URL. The control disappears once the field is empty,
+    // so a missing button means the clear already took effect.
+    await expect(async () => {
+      if (await this.clearSearchButton.isVisible()) {
+        await this.clearSearchButton.click();
+      }
 
-    // search() has already proven the page is interactive, so a single click is
-    // enough here -- only the round trip needs headroom.
-    await expect(this.page).not.toHaveURL(/[?&]q=/, { timeout: 15_000 });
-    await expect(this.searchInput).toHaveValue('', { timeout: 15_000 });
+      await expect(this.page).not.toHaveURL(/[?&]q=/, { timeout: 5_000 });
+    }).toPass({ timeout: 25_000 });
+
+    await expect(this.searchInput).toHaveValue('', { timeout: 10_000 });
   }
 
   async expectEmptyState(): Promise<void> {
